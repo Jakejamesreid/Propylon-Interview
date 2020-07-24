@@ -13,7 +13,9 @@ LEGISLATION_DATASET = 'legislation.json'
 MEMBERS_DATASET = 'members.json'
 
 
-load = lambda jfname: loads(open(jfname).read())
+def load(jfname): return loads(
+    open(os.path.join(sys.path[0]+"\\data\\", jfname)).read())
+
 
 def filter_bills_sponsored_by(pId):
     """Return bills sponsored by the member with the specified pId
@@ -22,19 +24,21 @@ def filter_bills_sponsored_by(pId):
     :return: dict of bill records
     :rtype: dict
     """
-    leg = load(LEGISLATION_DATASET)
-    mem = load(MEMBERS_DATASET)
-    ret = []
-    for res in leg['results']:
-        p = res['bill']['sponsors']
-        for i in p:
-            name = i['sponsor']['by']['showAs']
-            for result in mem['results']:
-                fname = result['member']['fullName']
-                rpId = result['member']['pId']
+    legislation = load(LEGISLATION_DATASET)
+    members = load(MEMBERS_DATASET)
+    sponsoredBills = []
+
+    for result in legislation['results']:
+        sponsors = result['bill']['sponsors']
+        for sponsor in sponsors:
+            name = sponsor['sponsor']['by']['showAs']
+
+            for member in members['results']:
+                fname = member['member']['fullName']
+                rpId = member['member']['pId']
                 if fname == name and rpId == pId:
-                    ret.append(res['bill'])
-    return ret
+                    sponsoredBills.append(result['bill'])
+    return sponsoredBills
 
 
 def filter_bills_by_last_updated(since, until):
@@ -50,3 +54,7 @@ def filter_bills_by_last_updated(since, until):
 
     """
     raise NotImplementedError
+
+
+answer = filter_bills_sponsored_by("IvanaBacik")
+print(answer)
