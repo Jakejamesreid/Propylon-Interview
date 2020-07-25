@@ -40,3 +40,22 @@ Test cases will then be developed to ensure correct functionality.
 
 ### Solving Task 4
 Ideally this task would have already been completed as the parameters for completeing this task were considered at each step of the way. Nevertheless this is still a good opportunity to revise the code and ensure that everything is as optomised as possible and that the unit test cover all edge cases.
+
+## The solution
+An easy solution for this task is to simply pass the member_id (the URI for the member) to the `filter_bills_sponsored_by` function as opposed to the pId parameter. This would then give the ability to use just the legislation endpoint with member_id as a parameter and all the bills sponsored by that member would be returned. This would also mean that the member's endpoint would not be needed. The same could be done for the `filter_bills_by_last_updated` function where the start_date and end_date parameters could be passed to the end point. As it is the weekend and not possible to get an answer as to wether this method is suitable I will assume that the functions definition is not to be changed.
+
+The implemented solution uses the members endpoint to obtain a list of the members and extracts the URI of the member whose pId was entered. The member URI is then passed to the legislation endpoint to return all the bills sponsored by that member.
+
+### Implementing the API call
+The requests module was used to make the API call. The original parameters used to obtain the data in the offline json files was not provided so I have estimated the parameters based off of the information in these files. The following parameters were chosen to pass to the legislation endpoint:
+* bill_status: Current,Withdrawn,Enacted,Rejected,Defeated,Lapsed
+* bill_source: Government,Private Member
+* date_start: 1900-01-01
+* date_end: 2099-01-01
+* member_id: {user defined}
+* lang: en
+
+** Issue ** Ideally when making the get request the parameters would be passed to the params keyword as a key value pair. Unfortunately this method could not be used as an issue with url encoding was experienced when passing the `memberURI` as a parameter. When this parameter was passed the requests module failed to correctly build the url, resulting in no data being returned from the legislation endpoint. For this reason the parameters were passed with the URI as a string to the get method.
+
+### Refactor the implementation of `filter_bills_sponsored_by`
+The implementation of the `filter_bills_sponsored_by` function is now much more simple and efficient than the orignal. By knowing the memberId (the URI of the member) the bills sponsored by this member can easily be found by passing the memberId as an arguement to the legislation endpoint. The method to obtain the memberId is also pretty simple. A call is made to the members endpoint and the data is looped over until a member with the user defined pId value is found. A generator expression was used to reduce memory usage and time taken to iterate over the list.
