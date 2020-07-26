@@ -1,57 +1,69 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 import json
 import unittest
-from datetime import datetime
+from unittest.mock import Mock, patch
+import datetime
+import os
+import sys
+import requests
 
-from oireachtas_api import LEGISLATION_DATASET, MEMBERS_DATASET
+# Local imports
+from oireachtas_api import MEMBERS_ENDPOINT, LEGISLATION_ENDPOINT
 from oireachtas_api import (
-    load,
+    get_endpoint_data,
     filter_bills_sponsored_by,
     filter_bills_by_last_updated
 )
 
 
-class TestLoadDataset(unittest.TestCase):
+class TestAPI(unittest.TestCase):
 
-    def setUp(self):
-        self.expected = json.load(open(MEMBERS_DATASET))
+    def test_legislation_api_response_status(self):
 
-    def test_load_from_file(self):
-        loaded = load(MEMBERS_DATASET)
-        self.assertEqual(
-            len(loaded['results']),
-            len(self.expected['results'])
-        )
+        # Send a request to the API server and conform that the response is okay
+        response = requests.get(
+            LEGISLATION_ENDPOINT+'?bill_status=Current,Withdrawn,Enacted,Rejected,Defeated,Lapsed')
+        self.assertTrue(response.ok)
 
-    def test_load_from_url(self):
-        loaded = load('https://api.oireachtas.ie/v1/members?limit=50')
-        self.assertEqual(
-            len(loaded.get('results', [])),
-            len(self.expected['results'])
-        )
+    def test_members_api_response_status(self):
+
+        # Send a request to the API server and conform that the response is okay
+        response = requests.get(MEMBERS_ENDPOINT)
+        self.assertTrue(response.ok)
+
+
+class TestGetEndpointData(unittest.TestCase):
+
+    def test_get_endpoint_data_legislation_response(self):
+
+        # If the request is sent successfully, then a response should be returned.
+        response = get_endpoint_data(LEGISLATION_ENDPOINT)
+        self.assertIsNotNone(response)
+
+    def test_get_endpoint_data_members_response(self):
+
+        # If the request is sent successfully, then a response should be returned.
+        response = get_endpoint_data(MEMBERS_ENDPOINT)
+        self.assertIsNotNone(response)
 
 
 class TestFilterBillsSponsoredBy(unittest.TestCase):
 
-    def test_sponsored(self):
+    def test_filter_bills_sponsored_by_response(self):
+        # If the request is sent successfully, then a response should be returned.
         results = filter_bills_sponsored_by('IvanaBacik')
-        self.assertGreaterEqual(len(results), 2)
+        self.assertGreaterEqual(len(results), 0)
 
 
 class TestFilterBillByLastUpdated(unittest.TestCase):
 
-    def test_last_updated(self):
-        expected = set(['77', '101', '58', '141', '55', '94', '133', '132',
-                        '131', '111', '135', '134', '91', '129', '103', '138',
-                        '106', '139'])
-        received = {
-            bill['billNo']
-            for bill in filter_bills_by_last_updated(
-                since=datetime(2018, 12, 1), until=datetime(2019, 1, 1)
-            )
-        }
-        self.assertEqual(expected, received)
+    def test_filter_bills_by_last_updated(self):
+
+        # If the request is sent successfully, then a response should be returned.
+        bills = filter_bills_by_last_updated(since=datetime.date(2018, 12, 1), until=datetime.date.today())
+        self.assertGreater(len(bills), 0)
 
 if __name__ == '__main__':
     unittest.main()

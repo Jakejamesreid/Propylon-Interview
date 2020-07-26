@@ -1,2 +1,5 @@
 # Virtual Environment
 propylon/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/

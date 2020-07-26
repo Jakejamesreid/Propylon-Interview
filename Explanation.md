@@ -10,31 +10,35 @@ After analysing the README file I gained an understanding for the tasks at hand.
 
 4. Improve the code base as you would any professional quality code. This includes not just error checking and improving code readability but also adding doc-strings, comments where necessary, additional tests if any ...etc.
 
+## Assumptions
+1. The readme.md did not specify if this code is meant to be developed for use by an end user or a developer. I have assumed that this code is being used by other developers and not by and end user. As such the code does not take user input.
+2. I have assumed that the definition of the functions is not to be changed.
+3. Data is just to be returned from the functions and not stored in a file or printed.
+
 ## The Strategy
-Here I will explain the my plan for solving eash task.
+Here I will explain the plan for solving eash task.
 
 ### Initial Setup
 First steps are to set up a git repository for version control. This is important for collaborating with other developers, having a backup of your code, being able to rollback to a previous version of your code, etc. The next step is to then create a virtual environment, which will allow for the projects required dependencies to be kept separate from other projects. These dependencies will be stored in the requirements.txt file.
 
 ### Understanding the code provided
-I started by gaining an understanding of how the code provided works. To do this I set some breakpoints in the `filter_bills_sponsored_by` function and started stepping through the code. Once I gained an understanding of how the code worked, I then proceeded to rename the variables with names that were more meaningful. This allows for better readibility for myself and other developers. I also made a slight adjustment to the file structure to add add a data folder to store the JSON files. This just helps to keep the working area easy to navigate through. A def function was used to replace the lambda expression that was assigned to a variable. This was done to keep with pep8 standards.
+I started by gaining an understanding of how the code provided works. To do this I set some breakpoints in the `filter_bills_sponsored_by` function and started stepping through the code. Once I gained an understanding of how the code worked, I then proceeded to rename the variables with names that were more meaningful. This allows for better readibility for myself and other developers. I also made a slight adjustment to the file structure to add add a data folder to store the JSON files. This just helps to keep the working area easy to navigate through. A def function was used to replace the lambda expression that was assigned to a  called load. This was done to keep with pep8 standards.
 
 ### Solving Task 1
-To implement this strategy, the most logical 1st step seemed to be to understand start with Task 1 whilst keeping Task 4 in mind throughout. My initial thoughts are that this will be a simple enough task. I can use the `requests` module to make an API call to the `legislation` and `members` api endpoints. The results of these API calls can then be passed to the anonymous function used to load the offline files. I must also ensure to incorporate appropriate error handling in the event that the API caoll fails.
+To implement this strategy, the most logical 1st step seemed to be to understand start with Task 1 whilst keeping Task 4 in mind throughout. My initial thoughts are that this will be a simple enough task. I can use the `requests` module to make an API call to the `legislation` and `members` api endpoints. The results of these API calls can then be passed to the load function used to load the offline files. Appropriate error handling must also be used in the event that the API call fails.
 
-Once this is implementation is functional, I can develop a unit test for testing the functionality of the API call. Testing API calls in unit tests requires the use of mocking. Mocking allows us to simulate that we received the data from the API. This means that our unit tests will not be dependant on a third party.
+Once this is implementation is functional, unit tests can be developed for testing the functionality of the API calls and the function. Testing API calls in unit tests is best done with the use of mocking. Mocking allows us to simulate that we received the data from the API. This means that our unit tests will not be dependant on a third party.
 
 ### Solving Task 2
-Ideally when using an API we want the amount of calls that we make to be as low as possible as it is very time consuming to make an API call and wait for the result. In the current implementation we have 3 nested loops, giving a time complexity of O(n^3). A decorator function can be used to time how long each function takes to run. I will use this method for for optimising the time taken as oppossed to just timing the entire script. The reason for this is that I don't want the time taken for the API call to be included due the uncontrollable time variance that will occur. This data can then be used to analyse the performance increase after optimisations are made. Some possible optimisation techniques are as follows:
+Ideally when using an API it isbest to keep the amount of calls that aree made as low as possible, as it is very time consuming to make an API call and wait for the result. In the current implementation there is 3 nested loops, giving a time complexity of O(n^3). A decorator function can be used to time how long each function takes to run. This method will be used for for optimising the time taken as oppossed to just timing the entire script. The reason for this is so that the time taken for the API call is not included as this involves an uncontrollable time variance. This data can then be used to analyse the performance increase after optimisations are made. Some possible optimisation techniques are as follows:
 * There might be an option to filter the data using the API. 
-* If it is okay to change the arguement passed to the function to be the name of the sponsor as opposed to the pId, then we can easily remove the inner most loop. 
-* The legislation endpoint also provides a filter by member URI option. This can be used to reduce the amount of loops needed.
+* If it is okay to change the arguement passed to the `filter_bills_sponsored_by` function to be the URI of the sponsor as opposed to the pId, then the implementation will be much more simple. 
 * A generator could be used for more efficient use of memory
 
 At this point it is good to ensure that all test cases are still functioning correctly.
 
 ### Solving Task 3
-The third task on initial examination also appears to be a simple enough solutions. The `legislation` endpoint accepts a start and end date as parameters. So the implementation will be very similar to the `filter_bills_sponsored_by` function.
+The third task on initial examination also appears to be a simple enough solutions. The `legislation` endpoint accepts a start and end date as parameters. So the implementation will be very similar to the `filter_bills_sponsored_by` function. A start and end date will be provided to the legislation endpoint to return a list of bills last updated within this date range.
 
 Test cases will then be developed to ensure correct functionality.
 
@@ -44,18 +48,39 @@ Ideally this task would have already been completed as the parameters for comple
 ## The solution
 An easy solution for this task is to simply pass the member_id (the URI for the member) to the `filter_bills_sponsored_by` function as opposed to the pId parameter. This would then give the ability to use just the legislation endpoint with member_id as a parameter and all the bills sponsored by that member would be returned. This would also mean that the member's endpoint would not be needed. The same could be done for the `filter_bills_by_last_updated` function where the start_date and end_date parameters could be passed to the end point. As it is the weekend and not possible to get an answer as to wether this method is suitable I will assume that the functions definition is not to be changed.
 
-The implemented solution uses the members endpoint to obtain a list of the members and extracts the URI of the member whose pId was entered. The member URI is then passed to the legislation endpoint to return all the bills sponsored by that member.
-
 ### Implementing the API call
 The requests module was used to make the API call. The original parameters used to obtain the data in the offline json files was not provided so I have estimated the parameters based off of the information in these files. The following parameters were chosen to pass to the legislation endpoint:
 * bill_status: Current,Withdrawn,Enacted,Rejected,Defeated,Lapsed
-* bill_source: Government,Private Member
-* date_start: 1900-01-01
-* date_end: 2099-01-01
-* member_id: {user defined}
+* member_id: {defined by specified pId value}
 * lang: en
 
 ** Issue ** Ideally when making the get request the parameters would be passed to the params keyword as a key value pair. Unfortunately this method could not be used as an issue with url encoding was experienced when passing the `memberURI` as a parameter. When this parameter was passed the requests module failed to correctly build the url, resulting in no data being returned from the legislation endpoint. For this reason the parameters were passed with the URI as a string to the get method.
 
 ### Refactor the implementation of `filter_bills_sponsored_by`
 The implementation of the `filter_bills_sponsored_by` function is now much more simple and efficient than the orignal. By knowing the memberId (the URI of the member) the bills sponsored by this member can easily be found by passing the memberId as an arguement to the legislation endpoint. The method to obtain the memberId is also pretty simple. A call is made to the members endpoint and the data is looped over until a member with the user defined pId value is found. A generator expression was used to reduce memory usage and time taken to iterate over the list.
+
+### Provide an implementation for the unimplemented function `filter_bills_by_last_updated`
+Originally I had thought that the endpoint parameters date_start and date_end could be used to return the bills last updated between these dates. On further inspection this was not the case so the implementation had to be changed. These dates might refer to when the bill was created as opposed to when it was last updated.
+
+To use the `filter_bills_by_last_updated` function the developer must pass a start and end date for the date range of bills that were last updated. If the developer does not pass a date, the default values will be applied. A call is then made to the legislation endpoint to return the list of bills. Whilst iterating over the bills, the lastUpdated data for each bill is compared to the date parameters passed to the function to ensure that it is within the correct range. If so the bill is appended to a list of bills to be returned to the user. There is also a check to ensure that no duplicate bills are added as the same bill can be updated more than once within the specified time range.
+
+
+## Test Cases
+
+### Mocking
+The initial plan was to use the mock object library to test the APIs in the unit test. Unfortunately this was unsuccessful due to using multiple API calls in the same function. This made the method for patching the API call unclear as the patch seemed to apply to all requests made within the function being patched. There did not seem to be an option to patch specific get requests. The attempt made can be seen below.
+```
+patch('oireachtas_api.requests.get')
+def test_filter_bills_sponsored_by_response(self, mock_get):
+    # Configure the mock to return a response with offline data.
+    with open(os.path.join(sys.path[0]+'\\data\\legislation.json')) as json_file:
+        mock_get.return_value.ok = json.load(json_file)
+
+    sponsoredBills = filter_bills_sponsored_by("GerryAdams")
+
+    # If the request is sent successfully, then I expect a response to be returned.
+    self.assertIsNotNone(sponsoredBills)
+```
+
+### TestFilterBillByLastUpdated Removed
+The original test case TestFilterBillByLastUpdated could not be used as if a bill was updated, the expected bills would no longer be valid. This means that this test case could potentially fail as the lastUpdated date for each bill changes.
