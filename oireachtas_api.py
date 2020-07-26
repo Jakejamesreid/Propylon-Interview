@@ -14,9 +14,43 @@ import os, sys
 import datetime
 import requests
 import json
+import cProfile, pstats, io
                     
 MEMBERS_ENDPOINT = 'https://api.oireachtas.ie/v1/members'
 LEGISLATION_ENDPOINT = 'https://api.oireachtas.ie/v1/legislation'
+
+def profile(fnc):
+    
+    """A decorator that uses cProfile to profile a function
+
+    :param function fnc: Takes a function as a parameter 
+    :rtype: wrapper return value
+    """
+    
+    def wrapper(*args, **kwargs):
+        """ A wrapper function that runs when the profile decorator is used on a function
+
+        :param *args args: Stores the functions positional arguements 
+        :param **args kwargs: Stores the functions keyword arguements 
+        :rtype: Returns function
+        """
+        # Profile the function
+        profiler = cProfile.Profile()
+        profiler.enable()
+        retval = fnc(*args, **kwargs)
+        profiler.disable()
+
+        # Display the data
+        s = io.StringIO()
+        sortby = 'cumulative'
+        ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+        ps.print_stats()
+        print(s.getvalue())
+
+        # Return results from our function
+        return retval
+
+    return wrapper
 
 def get_endpoint_data(uri):
     """Returns data queried from provided endpoint
@@ -41,6 +75,7 @@ def get_endpoint_data(uri):
     requestDict = response.json()
     return requestDict["results"]
 
+
 def filter_bills_sponsored_by(pId):
     """Return bills sponsored by the member with the specified pId
 
@@ -59,9 +94,9 @@ def filter_bills_sponsored_by(pId):
     memberURI = member['member']['uri']
 
     # Call to Legislation endpoint with parameters defined
-    legislationParameters = f"?bill_status=Current,Withdrawn,Enacted,Rejected,Defeated,Lapsed&member_id={memberURI}&lang=en"
+    legislationParameters = f"?member_id={memberURI}"
     legislationEndpoint = LEGISLATION_ENDPOINT+legislationParameters
-    return get_endpoint_data(legislationEndpoint)
+    return get_endpoint_data(LEGISLATION_ENDPOINT)
     
 
 def filter_bills_by_last_updated(since=datetime.date(1990, 1, 1), until=datetime.date.today()):
@@ -76,10 +111,10 @@ def filter_bills_by_last_updated(since=datetime.date(1990, 1, 1), until=datetime
     :rtype: list
 
     """
-    # Call to Legislation endpoint with parameters defined
-    legislationParameters = f"?bill_status=Current,Withdrawn,Enacted,Rejected,Defeated,Lapsed&lang=en"
-    legislationEndpoint = LEGISLATION_ENDPOINT+legislationParameters
-    bills = get_endpoint_data(legislationEndpoint)
+    if since > until:
+        raise ValueError(f"Start Date {since} is greater than end date {until}")
+
+    bills = get_endpoint_data(LEGISLATION_ENDPOINT)
 
     billNos = []
     billsWithinDateRange = []
@@ -97,10 +132,3 @@ def filter_bills_by_last_updated(since=datetime.date(1990, 1, 1), until=datetime
                 billNos.append(bill["bill"]["billNo"])
 
     return billsWithinDateRange
-    
-
-# sponsoredBills = filter_bills_sponsored_by("GerryAdams")
-# print(sponsoredBills)
-
-# bills = filter_bills_by_last_updated(datetime.date(1990, 1, 1), datetime.date.today())
-# print(bills)
