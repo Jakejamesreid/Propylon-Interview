@@ -4,7 +4,7 @@
 import json
 import unittest
 from unittest.mock import Mock, patch
-import datetime
+from datetime import datetime, date, timedelta
 import os
 import sys
 import requests
@@ -54,7 +54,8 @@ class TestGetEndpointData(unittest.TestCase):
             params = '?bill_status=Invalid'
             get_endpoint_data(LEGISLATION_ENDPOINT+params)
 
-        self.assertEqual(cm.exception.code[1], f"Invalid URI {LEGISLATION_ENDPOINT+params}")
+        self.assertEqual(
+            cm.exception.code[1], f"Invalid URI {LEGISLATION_ENDPOINT+params}")
 
     def test_get_endpoint_data_members_HTTPError(self):
 
@@ -62,7 +63,8 @@ class TestGetEndpointData(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             params = '?date_start=Invalid'
             get_endpoint_data(LEGISLATION_ENDPOINT+params)
-        self.assertEqual(cm.exception.code[1], f"Invalid URI {LEGISLATION_ENDPOINT+params}")
+        self.assertEqual(
+            cm.exception.code[1], f"Invalid URI {LEGISLATION_ENDPOINT+params}")
 
 
 class TestFilterBillsSponsoredBy(unittest.TestCase):
@@ -78,24 +80,29 @@ class TestFilterBillsSponsoredBy(unittest.TestCase):
         with self.assertRaises(StopIteration) as cm:
             pId = 'Invalid'
             filter_bills_sponsored_by(pId)
-        self.assertEqual(cm.exception.args[1], f"No URI associated with the pId value provided, check that the pId ({pId}) entered is correct.")
+        self.assertEqual(
+            cm.exception.args[1], f"No URI associated with the pId value provided, check that the pId ({pId}) entered is correct.")
+
 
 class TestFilterBillByLastUpdated(unittest.TestCase):
 
     def test_filter_bills_by_last_updated_response(self):
 
         # If the request is sent successfully, then a response should be returned.
-        bills = filter_bills_by_last_updated(since=datetime.date(2018, 12, 1), until=datetime.date.today())
+        bills = filter_bills_by_last_updated(
+            since=date(2018, 12, 1), until=date.today())
         self.assertGreater(len(bills), 0)
 
     def test_filter_bills_by_last_updated_error(self):
 
         # ValueError if startDate > endDate
         with self.assertRaises(ValueError) as cm:
-            startDate = datetime.date.today()+datetime.timedelta(days=1)
-            endDate = datetime.date.today()
+            startDate = date.today()+timedelta(days=1)
+            endDate = date.today()
             filter_bills_by_last_updated(startDate, endDate)
-        self.assertEqual(cm.exception.args[0], f"Start Date {startDate} is greater than end date {endDate}")
+        self.assertEqual(
+            cm.exception.args[0], f"Start Date {startDate} is greater than end date {endDate}")
+
 
 if __name__ == '__main__':
     unittest.main()

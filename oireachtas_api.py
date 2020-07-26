@@ -10,25 +10,27 @@ api endpoints to answer the questions:
 * Which bills were sponsored by a given member ?
 * Which bills were last updated within a specified time period ?
 """
-import os, sys
-import datetime
+import os
+from datetime import datetime, date
 import requests
 import json
-import cProfile, pstats, io
-                    
+import cProfile
+import pstats
+import io
+
 MEMBERS_ENDPOINT = 'https://api.oireachtas.ie/v1/members'
 LEGISLATION_ENDPOINT = 'https://api.oireachtas.ie/v1/legislation'
 
+
 def profile(fnc):
-    
     """A decorator that uses cProfile to profile a function
 
     :param function fnc: Takes a function as a parameter 
     :rtype: wrapper return value
     """
-    
+
     def wrapper(*args, **kwargs):
-        """ A wrapper function that runs when the profile decorator is used on a function
+        """A wrapper function that runs when the profile decorator is used on a function
 
         :param *args args: Stores the functions positional arguements 
         :param **args kwargs: Stores the functions keyword arguements 
@@ -41,16 +43,17 @@ def profile(fnc):
         profiler.disable()
 
         # Display the data
-        s = io.StringIO()
-        sortby = 'cumulative'
-        ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
-        ps.print_stats()
-        print(s.getvalue())
+        strStream = io.StringIO()
+        profileStats = pstats.Stats(
+            profiler, stream=strStream).sort_stats('cumulative')
+        profileStats.print_stats()
+        print(strStream.getvalue())
 
         # Return results from our function
         return retval
 
     return wrapper
+
 
 def get_endpoint_data(uri):
     """Returns data queried from provided endpoint
@@ -86,20 +89,22 @@ def filter_bills_sponsored_by(pId):
 
     # Generator expression to identify the members whose pId is the same as the user defined pId
     try:
-        memberGenerator = (member for member in members if pId == member['member']['pId'])
+        memberGenerator = (
+            member for member in members if pId == member['member']['pId'])
         member = next(memberGenerator)
     except StopIteration as err:
-        raise StopIteration(err, f"No URI associated with the pId value provided, check that the pId ({pId}) entered is correct.")
-    
+        raise StopIteration(
+            err, f"No URI associated with the pId value provided, check that the pId ({pId}) entered is correct.")
+
     memberURI = member['member']['uri']
 
     # Call to Legislation endpoint with parameters defined
     legislationParameters = f"?member_id={memberURI}"
-    legislationEndpoint = LEGISLATION_ENDPOINT+legislationParameters
+    legislationEndpoint = LEGISLATION_ENDPOINT + legislationParameters
     return get_endpoint_data(LEGISLATION_ENDPOINT)
-    
 
-def filter_bills_by_last_updated(since=datetime.date(1990, 1, 1), until=datetime.date.today()):
+
+def filter_bills_by_last_updated(since=date(1990, 1, 1), until=date.today()):
     """Return bills updated within the specified date range
 
     :param datetime.date since: The lastUpdated value for the bill
@@ -112,7 +117,8 @@ def filter_bills_by_last_updated(since=datetime.date(1990, 1, 1), until=datetime
 
     """
     if since > until:
-        raise ValueError(f"Start Date {since} is greater than end date {until}")
+        raise ValueError(
+            f"Start Date {since} is greater than end date {until}")
 
     bills = get_endpoint_data(LEGISLATION_ENDPOINT)
 
@@ -123,7 +129,8 @@ def filter_bills_by_last_updated(since=datetime.date(1990, 1, 1), until=datetime
         date = bill["bill"]["lastUpdated"].split("T")
 
         # Convert lastUpdated to a Date object in yyyymmdd format
-        billLastUpdated = datetime.datetime.strptime(date[0], '%Y-%m-%d').date()
+        billLastUpdated = datetime.strptime(
+            date[0], '%Y-%m-%d').date()
 
         if billLastUpdated > since and billLastUpdated <= until:
             # Prevent adding same bill updated multiple times within date range
